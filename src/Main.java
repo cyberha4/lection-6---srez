@@ -1,83 +1,67 @@
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
-import java.util.Set;
 
 /**
- * Created by root on 13.02.17.
+ * Created by Хидир on 13.02.2017.
  */
 public class Main {
-    public volatile static HashMap<Integer, Integer> hashMap = new HashMap<>();
-    public static Object lock = new Object();
-    public volatile static int counterPut = 0;
-    public volatile static int counterHash = 0;
+    static HashMap<Integer, Integer> hashMap = new HashMap<>();
 
+    static volatile boolean play = true;
+    static volatile int sec;
+
+    static volatile Object lock = new Object();
 
     public static void main(String[] args) {
-        Runnable run = new Runnable() {
+        Thread thread1 = new Thread(new Runnable() {
             @Override
             public void run() {
 
-                Random random = new Random(590);
-                while(true) {
-                    // Создадим число от 0 до 10
-                    //тестовое изменение
+                while(play) {
                     try {
-                        Thread.sleep(1);
+                        Thread.sleep(200);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
-                    int number = random.nextInt(100);
-                    Integer frequency = hashMap.get(number);
+                    int randInt = new Random().nextInt(10);
+                    Integer curVal = hashMap.containsKey(randInt) ? hashMap.get(randInt) : 0;
 
+                    if(++curVal > 5){
+                        System.out.println("Значение "+randInt+ " сгенерировано больше 5 раз - ");
+                        play = false;
+                    }
+
+                    sec++;
+                    hashMap.put(randInt, curVal);
                     synchronized (lock) {
-                        counterPut++;
-                        hashMap.put(number, frequency == null ? 1 : frequency + 1);
+                        lock.notify();
                     }
+
                 }
             }
-        };
+        });
 
-        Runnable run2 = new Runnable() {
+        Thread thread2 = new Thread(new Runnable() {
             @Override
             public void run() {
-                while (true) {
-                    try {
-                        Thread.sleep(2000);
 
-                        synchronized (lock) {
-                            //System.out.println(hashMap);
-
-                            Set<Map.Entry<Integer, Integer>> set = hashMap.entrySet();
-
-                            counterHash = 0;
-
-
-                            for (Map.Entry<Integer, Integer> me : set) {
-                                System.out.print(me.getKey() + ":");
-                                System.out.print(me.getValue());
-                                System.out.print(" ");
-                                counterHash += me.getValue();
-                            }
-
-                            System.out.println();
-                            if(counterHash == counterPut)
-                                System.out.println("good");
-                            System.out.println("counterHash " + counterHash);
-                            System.out.println("counterPut " + counterPut);
-
+                while(play){
+                    System.out.println(sec);    if(sec != 0 && sec%5 == 0)  for (Map.Entry<Integer, Integer> item : hashMap.entrySet()) {
+                        System.out.printf("Ключ: %d  Значение: %s \n", item.getKey(), item.getValue());
+                    }
+                    synchronized (lock) {
+                        try {
+                            lock.wait();
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
                         }
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
                     }
                 }
             }
-        };
+        });
 
-        Thread thread = new Thread(run);
-        Thread thread2 = new Thread(run2);
-
-        thread.start();
+        thread1.start();
         thread2.start();
     }
 }
