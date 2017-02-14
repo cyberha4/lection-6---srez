@@ -21,6 +21,7 @@ public class Main {
                 Random random = new Random(590);
                 while(true) {
                     // Создадим число от 0 до 10
+                    //тестовое изменение
                     try {
                         Thread.sleep(1);
                     } catch (InterruptedException e) {
